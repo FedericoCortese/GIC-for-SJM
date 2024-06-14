@@ -3,6 +3,8 @@ pers1=.99
 Ns=c(300,600,1000)
 seed=123
 
+source("Utils.R")
+
 # Ktrue=2 -----------------------------------------------------------------
 corsK2=c(.8,.4)
 YYs_K2_300=lapply(seed,sim_data,Ktrue=2,N=Ns[1],P=100,cors=corsK2,pers=pers1,m=2)

@@ -11,28 +11,7 @@ import("scipy")
 # Import python functions for SJM estimation
 source_python('SJ.py')
 
-order_states=function(states){
-  
-  # This function organizes states by assigning 1 to the first observed state and sequentially numbering each new state as 2, 3, etc., incrementing by 1 for each newly observed state.
-  # states is a vector of observed states
-  
-  N=length(states)
-  states_temp=rep(0,N)
-  new=1
-  states_temp[1]=new
-  for(i in 2:N){
-    if(sum(states[i]==states[1:(i-1)])==0){
-      # we enter this is if-stat. whenever a new state appeares
-      states_temp[i]=new+1
-      new=new+1
-    }
-    else{
-      states_temp[i]=states_temp[which(states[1:(i-1)]==states[i])[1]]
-    }
-  }
-  return(states_temp)
-}
-
+source("est.R")
 
 sim_data=function(seed,Ktrue,N,P,cors,pers,m){
   
@@ -83,13 +62,22 @@ sim_data=function(seed,Ktrue,N,P,cors,pers,m){
   Y=apply(Y,2,scale)
   true_states=order_states(as.factor(observationSequence$X))
   
-  set.seed(seed)
-  Ytil=Y[sample(N),]
-  for(i in 2:m){
-    Ytil=cbind(Ytil,Y[sample(N),])
+  if(m==0){
+    return(list(true_states=true_states,
+                YY=Y))
   }
-  
-  YY=cbind(Y,Ytil)
+  else{
+    set.seed(seed)
+    Ytil=Y[sample(N),]
+    
+    if(m>1){
+      for(i in 2:m){
+        Ytil=cbind(Ytil,Y[sample(N),])
+      }
+    }
+    
+    YY=cbind(Y,Ytil)
+  }
   
   return(list(true_states=true_states,
               YY=YY))
