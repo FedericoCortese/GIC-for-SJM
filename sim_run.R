@@ -10,6 +10,7 @@ K=2:4
 kappa=c(seq(1,10,by=1),12,14,17) # 14 values
 lambda=c(0,5,10,25,50,100) # 6 values
 hp=expand.grid(seed=seed,K=K,kappa=kappa,lambda=lambda)
+hpsat=expand.grid(seed=seed,notimp=1)
 
 # Ktrue=2 -----------------------------------------------------------------
 corsK2=c(.8,.4)
