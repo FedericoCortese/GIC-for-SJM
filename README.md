@@ -6,3 +6,6 @@ The "Utils" file encompasses a suite of R functions essential for GIC computatio
 
 ## sim_run
 The "sim_run" file is responsible for executing all simulation studies associated with this project. 
+
+## est_example
+The "est_example" file provides a simple example of estimating an SJM and computing the GIC for model selection.
