@@ -1,5 +1,4 @@
 source("Utils.R")
-#source("est.R")
 
 #Simulate data
 pers1=.99

@@ -60,6 +60,8 @@ SJM_est=function(Y,K,kappa,lambda,Ksat=6,alpha0,K0,pers0){
   # est_weights: estimated weights
   # est_states: estimated states
   # FTIC: FTIC criterion
+  # BIC: BIC criterion
+  # AIC: AIC criterion
   
   library(dplyr)
   library(tidyverse)
@@ -96,6 +98,8 @@ SJM_est=function(Y,K,kappa,lambda,Ksat=6,alpha0,K0,pers0){
   
   CKp=-log(K)-log(2*pi)*kappa/2
   CKp_sat=-log(Ksat)-log(2*pi)*sqrt(PP)/2
+  
+  loglik=N*CKp-Ln/2
   
   anFTIC=log(log(N))*log(PP)
   anAIC=rep(2,length(N))
@@ -294,6 +298,10 @@ sim_est_SJM=function(seed,K,lambda,kappa,true_data,Ktrue,
   ### Second version: compute BCSS as L2 norm
   Ln2=sqrt(sum(get_BCSS(as.matrix(XX),est_states)^2))
   
+  CKp=-log(K)-log(2*pi)*kappa/2
+
+  loglik=N*CKp-Ln1/2
+  
   pen=sum(est_states[1:(N-1)]!=est_states[2:N])
   alphak=length(which(est_weights!=0))
   
@@ -318,7 +326,7 @@ sim_est_SJM=function(seed,K,lambda,kappa,true_data,Ktrue,
     kappa=kappa,
     Ln1=Ln1,
     Ln2=Ln2,
-    # TotalPenalty=TotalPenalty,
+    loglik=loglik,
     pen=pen,
     alphak=alphak,
     ARI_states=ARI_states,
