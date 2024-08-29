@@ -1,5 +1,5 @@
 source("Utils.R")
-source("est.R")
+#source("est.R")
 
 #Simulate data
 pers1=.99
@@ -14,7 +14,7 @@ true_stats=Y[[1]]
 Y=Y[[2]]
 
 # Estimate SJM with varying lambda and kappa
-Yest_0=SJM_est(Y,K=2,kappa=2,lambda=0,
+Yest_0=SJM_est(Y,K=3,kappa=2,lambda=0,
              Ksat=6,alpha0=100,K0=2,pers0=.95)
 Yest_1=SJM_est(Y,K=2,kappa=7,lambda=10,
                Ksat=6,alpha0=100,K0=2,pers0=.95)
@@ -26,7 +26,7 @@ Yest_0$FTIC
 Yest_1$FTIC
 Yest_2$FTIC
 
-# Compare in terms of ARI
+# Compare in terms of ARI computed between true and estimated states
 pdfCluster::adj.rand.index(Yest_0$est_states,true_stats)
 pdfCluster::adj.rand.index(Yest_1$est_states,true_stats)
 pdfCluster::adj.rand.index(Yest_2$est_states,true_stats)

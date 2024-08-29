@@ -1,9 +1,15 @@
 # pers 90 -----------------------------------------------------------------
-pers1=.99
+pers1=.90
 Ns=c(300,600,1000)
 seed=123
 
 source("Utils.R")
+
+seed=1:100
+K=2:4
+kappa=c(seq(1,10,by=1),12,14,17) # 14 values
+lambda=c(0,5,10,25,50,100) # 6 values
+hp=expand.grid(seed=seed,K=K,kappa=kappa,lambda=lambda)
 
 # Ktrue=2 -----------------------------------------------------------------
 corsK2=c(.8,.4)
@@ -29,6 +35,7 @@ gicsim_K2_T300 <- parallel::mclapply(1:nrow(hp),
                                                    K0=2,
                                                    alpha0=100),
                                      mc.cores = parallel::detectCores())
+
 gicsim_sat_K2_T300<-parallel::mclapply(1:nrow(hpsat),
                                        function(x) 
                                          satmod_est(seed=hpsat[x,]$seed,
