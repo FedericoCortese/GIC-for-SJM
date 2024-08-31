@@ -445,6 +445,8 @@ GIC=function(simest,satmod,Ksat=6,alpha0,K0){
   est_weights=data.frame(matrix(unlist(lapply(simest,function(x)x$norm_est_weights)),
                                 ncol = PP[1],byrow=T))
   
+  loglik=unlist(lapply(simest,function(x)x$loglik))
+  
   res=data.frame(seed,
                  FTIC,
                  BIC,
@@ -459,7 +461,8 @@ GIC=function(simest,satmod,Ksat=6,alpha0,K0){
                  ARI.weights,
                  setup,
                  corr_sel_feat,
-                 wrong_sel_feat)
+                 wrong_sel_feat,
+                 loglik)
   
   res_est_weights=data.frame(setup,
                              est_weights)
@@ -480,7 +483,8 @@ GIC=function(simest,satmod,Ksat=6,alpha0,K0){
               kappa=mean(kappa),
               K=mean(K),
               corr_sel_feat=mean(corr_sel_feat),
-              wrong_sel_feat=mean(wrong_sel_feat))
+              wrong_sel_feat=mean(wrong_sel_feat),
+              avloglik=mean(loglik))
   
   res_est_weights=res_est_weights%>%group_by(setup)%>%
     summarise_all(mean)
