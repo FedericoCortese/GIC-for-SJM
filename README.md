@@ -12,3 +12,6 @@ Function to simulate data from a multivariate Gaussian HMM.
 
 # est_example
 The "est_example" file provides a simple example of estimating an SJM and computing the GIC for model selection.
+
+# sim_run.R
+Runs the simulation study in ["Generalized Information Criteria for High-Dimensional Sparse Statistical Jump Models"](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4774429), by Federico P. Cortese, Petter N. Kolm, Erik Lindström.
