@@ -177,6 +177,8 @@ SJM_est=function(Y,K,kappa,lambda,Ksat=6,alpha0=NULL,K0=NULL,pers0=NULL){
 sim_data=function(seed,Ktrue,N,P,cors,pers,m){
   
   # Function to simulate data from a multivariate Gaussian HMM
+
+  # Arguments:
   # seed is the seed for the random number generator
   # Ktrue is the number of states
   # N is the number of observations
@@ -185,7 +187,7 @@ sim_data=function(seed,Ktrue,N,P,cors,pers,m){
   # pers is the self-transition probability 
   # m is an integer number such that m*P is the number of false features
   
-  # Output:   
+  # Value:   
   # A list with the true states and the simulated data
   
   states_names = as.character(seq(1,Ktrue))
