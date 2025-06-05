@@ -41,3 +41,42 @@ which(Yest_1$est_weights!=0)
 which(Yest_2$est_weights!=0)
 
 # Best model according to correctly selected features: Yest_1
+
+
+# Automatic selection with GIC
+
+res_grid=grid_search_SJM(
+    Y,
+    K_grid=NULL,
+    kappa_grid=NULL,
+    lambda_grid=NULL,
+    parallel   = F,
+    max_iter   = 10,
+    n_init     = 10,
+    tol        = 1e-8,
+    Ksat       = 6,
+    K0=NULL,
+    pers0=NULL,
+    alpha0=NULL
+)
+
+# CV
+
+res_cv=cv_sparse_jump(
+    Y=Y,
+    true_states=true_stats,
+    K_grid=2:4,
+    kappa_grid=seq(1,sqrt(P),length.out=5),
+    lambda_grid=c(0,.5,1,5,10,50,100,1000,10^4),
+    n_folds = 5,
+    parallel=F
+)
+
+
+res_cv[which.max(res_cv$ARI),]
+best_K=res_cv$K[which.max(res_cv$ARI)]
+best_kappa=res_cv$kappa[which.max(res_cv$ARI)]
+best_lambda=res_cv$lambda[which.max(res_cv$ARI)]
+
+
+
