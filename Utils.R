@@ -8,13 +8,13 @@ check_and_install <- function(pkg) {
 
 # Check and install R packages
 check_and_install("RcppHMM")
-check_and_install("reticulate")
+check_and_install("Rcpp")
 check_and_install("pdfCluster")
 check_and_install("boot")
 check_and_install("xtable")
 
 library(RcppHMM)
-library(reticulate)
+library(Rcpp)
 library(pdfCluster)
 library(boot)
 library(xtable)
@@ -22,11 +22,14 @@ library(xtable)
 # Run the following only one time to install the python package
 # py_install("scipy")
 
-# Import the python module
-import("scipy")
+# # Import the python module
+# import("scipy")
+# 
+# # Import python functions for SJM estimation
+# source_python('SJ.py')
 
-# Import python functions for SJM estimation
-source_python('SJ.py')
+# Source cpp files
+Rcpp::sourceCpp("sjm.cpp")
 
 order_states=function(states){
   
@@ -50,7 +53,12 @@ order_states=function(states){
   return(states_temp)
 }
 
-SJM_est=function(Y,K,kappa,lambda,Ksat=6,alpha0=NULL,K0=NULL,pers0=NULL){
+SJM_est=function(Y,K,kappa,lambda,
+                 verbose=F,
+                 max_iter=10,
+                 tol=1e-8,
+                 n_init=10,
+                 Ksat=6,alpha0=NULL,K0=NULL,pers0=NULL){
   
   # This function estimates the parameters of the SJM model
   
@@ -93,27 +101,38 @@ SJM_est=function(Y,K,kappa,lambda,Ksat=6,alpha0=NULL,K0=NULL,pers0=NULL){
   PP=dim(Y)[2]
   N=dim(Y)[1]
   
-  res=sparse_jump(Y=as.matrix(YY), 
-                  n_states=as.integer(K), 
-                  max_features=kappa, 
-                  jump_penalty=lambda,
-                  max_iter=as.integer(10), 
-                  tol=1e-4, 
-                  n_init=as.integer(10), 
-                  verbose=F)
+  # res=sparse_jump(Y=as.matrix(YY), 
+  #                 n_states=as.integer(K), 
+  #                 max_features=kappa, 
+  #                 jump_penalty=lambda,
+  #                 max_iter=as.integer(10), 
+  #                 tol=1e-4, 
+  #                 n_init=as.integer(10), 
+  #                 verbose=F)
+  
+  res=sparse_jump(
+    Y_in=as.matrix(YY),
+    n_states=as.integer(K),
+    max_features=kappa, 
+    jump_penalty=lambda,
+    max_iter=max_iter, 
+    tol=tol, 
+    n_init=n_init, 
+    verbose=verbose
+  )
   
   
-  est_weights=res[[2]]
+  est_weights=res$feat_w
   norm_est_weights=est_weights/sum(est_weights)
   
-  est_states=order_states(res[[1]])
+  est_states=order_states(res$states)
   
   res_df=data.frame(state=as.factor(est_states), Y)
   
   indx=which( est_weights!=0)
   XX=YY[,indx]
   ### First version: compute BCSS as L1 norm
-  Ln=sum(get_BCSS(as.matrix(XX),est_states))
+  Ln=sum(get_BCSS(as.matrix(XX),est_states,K))
   
   pen=sum(est_states[1:(N-1)]!=est_states[2:N])
   alphak=length(which(est_weights!=0))
@@ -131,20 +150,20 @@ SJM_est=function(Y,K,kappa,lambda,Ksat=6,alpha0=NULL,K0=NULL,pers0=NULL){
   
   TotalPenalty=(alpha0+pen0)*K+K0*(alphak-alpha0+pen-pen0) 
   
-  res_sat=sparse_jump(Y=as.matrix(YY), n_states=as.integer(Ksat), 
+  res_sat=sparse_jump(Y_in=as.matrix(YY), n_states=as.integer(Ksat), 
                       max_features=sqrt(dim(YY)[2]), 
                       jump_penalty=0,
-                      max_iter=as.integer(10), 
-                      tol=1e-4, 
-                      n_init=as.integer(10), 
-                      verbose=F)
+                      max_iter=max_iter, 
+                      tol=tol, 
+                      n_init=max_iter, 
+                      verbose=verbose)
   
-  est_weights_sat=res_sat[[2]]
+  est_weights_sat=res_sat$feat_w
   norm_est_weights_sat=est_weights_sat/sum(est_weights_sat)
   
-  est_states_sat=order_states(res_sat[[1]])
+  est_states_sat=order_states(res_sat$states)
   
-  Lnsat=sum(get_BCSS(as.matrix(YY),est_states_sat))
+  Lnsat=sum(get_BCSS(as.matrix(YY),est_states_sat,K))
   
   Ln_diff=Lnsat-Ln
   CKp_diff=CKp_sat-CKp

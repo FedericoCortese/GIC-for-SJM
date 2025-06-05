@@ -7,15 +7,19 @@ seed=123
 corsK2=c(.8,.4)
 P=100
 
+# m*P is the number of false features 
 Y=sim_data(seed,Ktrue=2,Ns,P,corsK2,pers,m=1)
 
 true_stats=Y[[1]]
 Y=Y[[2]]
 
+dim(Y)
+# Final datasets counts P=200 features, 100 of which are false features
+
 # Estimate SJM with varying lambda and kappa
 Yest_0=SJM_est(Y,K=3,kappa=2,lambda=0)
-Yest_1=SJM_est(Y,K=2,kappa=7,lambda=10)
-Yest_2=SJM_est(Y,K=2,kappa=16,lambda=50)
+Yest_1=SJM_est(Y,K=2,kappa=7,lambda=50)
+Yest_2=SJM_est(Y,K=2,kappa=16,lambda=1000)
 
 # Compare FTIC
 Yest_0$FTIC
