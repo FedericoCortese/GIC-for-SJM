@@ -460,7 +460,8 @@ cv_sparse_jump <- function(
     lambda_grid=NULL,
     n_folds = 5,
     parallel=F,
-    n_cores=NULL
+    n_cores=NULL,
+    cv_method="forward-chaining"
 ) {
   
   # cv_sparse_jump: Cross-validate Sparse Jump Model parameters (K, kappa, lambda)
@@ -473,6 +474,9 @@ cv_sparse_jump <- function(
   #   lambda_grid - vector of candidate lambdas
   #   n_folds     - number of folds for cross-validation (default: 5)
   #   parallel    - logical; TRUE for parallel execution (default: FALSE)
+  #   n_cores     - number of cores to use for parallel execution (default:  NULL)
+  #   cv_method   - method for cross-validation: "blocked-cv" or "forward-chain"
+  
   
   # Value:
   #   A data.frame with one row per (K, kappa, lambda) combination, containing:
@@ -500,10 +504,23 @@ cv_sparse_jump <- function(
   P <- ncol(Y)
   
   # Suddivido gli N campioni in n_folds blocchi contigui
+  if(method=="blocked-cv"){
   fold_indices <- split(
     1:N,
     rep(1:n_folds, each = ceiling(N / n_folds), length.out = N)
   )
+  
+  }
+  else if(method=="forward-chain"){
+    fold_indices <- lapply(seq_len(n_folds), function(k) {
+      idx_end <- N - (k - 1)
+      1:(idx_end-1)
+    })
+    names(fold_indices) <- as.character(seq_len(n_folds))
+  }
+  else{
+    stop("cv_method must be either 'blocked-cv' or 'forward-chain'")
+  }
   
   # Funzione che, per una tripla (K, kappa, lambda) e un fold (train_idx, val_idx),
   # calcola l’ARI sui punti di validazione
