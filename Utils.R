@@ -275,7 +275,7 @@ grid_search_SJM <- function(
     Ksat       = 6,
     K0=NULL,
     pers0=NULL,
-    alpha0=NULL,
+    alpha0=NULL
 ) {
   
   library(parallel)
@@ -461,7 +461,7 @@ cv_sparse_jump <- function(
     n_folds = 5,
     parallel=F,
     n_cores=NULL,
-    cv_method="forward-chaining"
+    cv_method="forward-chain"
 ) {
   
   # cv_sparse_jump: Cross-validate Sparse Jump Model parameters (K, kappa, lambda)
@@ -504,14 +504,14 @@ cv_sparse_jump <- function(
   P <- ncol(Y)
   
   # Suddivido gli N campioni in n_folds blocchi contigui
-  if(method=="blocked-cv"){
+  if(cv_method=="blocked-cv"){
   fold_indices <- split(
     1:N,
     rep(1:n_folds, each = ceiling(N / n_folds), length.out = N)
   )
   
   }
-  else if(method=="forward-chain"){
+  else if(cv_method=="forward-chain"){
     fold_indices <- lapply(seq_len(n_folds), function(k) {
       idx_end <- N - (k - 1)
       1:(idx_end-1)

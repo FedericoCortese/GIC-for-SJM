@@ -78,5 +78,22 @@ best_K=res_cv$K[which.max(res_cv$ARI)]
 best_kappa=res_cv$kappa[which.max(res_cv$ARI)]
 best_lambda=res_cv$lambda[which.max(res_cv$ARI)]
 
+# Cross-validation
 
+cv_forw=cv_sparse_jump(
+    Y=Y,
+    true_states=true_stats,
+    K_grid=c(2,3),
+    kappa_grid=seq(1,sqrt(dim(Y)[2]),length.out=8),
+    lambda_grid=c(0,.5,1,5),
+    n_folds = 10,
+    parallel=F,
+    n_cores=NULL,
+    cv_method="blocked-cv"
+)
 
+cv_forw[which.max(cv_forw$ARI),]
+
+Yest_cv=SJM_est(Y,K=2,kappa=1,lambda=5)
+Yest_cv$FTIC
+Yest_cv$est_weights
