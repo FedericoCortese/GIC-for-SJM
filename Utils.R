@@ -820,44 +820,44 @@ gap_sparse_jump=function(
 }
 
 # Automatic selection of kappa based on GAP statistic
-optimal_kappa <- gap_stats %>%
-  # Per ciascun K, ordina per kappa
-  group_by(K) %>%
-  arrange(kappa) %>%
-  # Calcola il GAP e la se del passo successivo
-  mutate(
-    GAP_next = lead(GAP),
-    se_next  = lead(se_log_O_star),
-    # regola di Tibshirani: Gap(K,κ) >= Gap(K,κ_next) - se(K,κ_next)
-    select_here = GAP >= (GAP_next - se_next)
-  ) %>%
-  # mantiene solo i κ che soddisfano la regola
-  filter(select_here) %>%
-  # prende il più piccolo κ per ciascun K
-  slice_head(n = 1) %>%
-  ungroup() %>%
-  select(K, optimal_kappa = kappa, GAP, GAP_next, se_next)
-
-print(optimal_kappa)
-
-epsilon         <- 0.05   # soglia per dire che Δ+ è "vicino a zero"
-ratio_threshold <- 0.2    # Δ+ / Δ- dev'essere molto piccolo (<20%)
-
-elbow_kappa <- gap_stats %>%
-  group_by(K) %>%
-  arrange(kappa) %>%
-  mutate(
-    delta_prev = GAP - lag(GAP),       # incremento da kappa_{i-1} a kappa_i
-    delta_next = lead(GAP) - GAP       # incremento da kappa_i a kappa_{i+1}
-  ) %>%
-  filter(
-    !is.na(delta_prev) & !is.na(delta_next),  # scarta i bordi
-    delta_prev > 0,                           # è in crescita dal precedente?
-    delta_next < epsilon,                     # la crescita verso il successivo è piccola?
-    (delta_next / delta_prev) < ratio_threshold
-  ) %>%
-  slice_head(n = 1) %>%                       # primo kappa che soddisfa
-  ungroup() %>%
-  select(K, elbow_kappa = kappa, GAP, delta_prev, delta_next)
-
-print(elbow_kappa)
+# optimal_kappa <- gap_stats %>%
+#   # Per ciascun K, ordina per kappa
+#   group_by(K) %>%
+#   arrange(kappa) %>%
+#   # Calcola il GAP e la se del passo successivo
+#   mutate(
+#     GAP_next = lead(GAP),
+#     se_next  = lead(se_log_O_star),
+#     # regola di Tibshirani: Gap(K,κ) >= Gap(K,κ_next) - se(K,κ_next)
+#     select_here = GAP >= (GAP_next - se_next)
+#   ) %>%
+#   # mantiene solo i κ che soddisfano la regola
+#   filter(select_here) %>%
+#   # prende il più piccolo κ per ciascun K
+#   slice_head(n = 1) %>%
+#   ungroup() %>%
+#   select(K, optimal_kappa = kappa, GAP, GAP_next, se_next)
+# 
+# print(optimal_kappa)
+# 
+# epsilon         <- 0.05   # soglia per dire che Δ+ è "vicino a zero"
+# ratio_threshold <- 0.2    # Δ+ / Δ- dev'essere molto piccolo (<20%)
+# 
+# elbow_kappa <- gap_stats %>%
+#   group_by(K) %>%
+#   arrange(kappa) %>%
+#   mutate(
+#     delta_prev = GAP - lag(GAP),       # incremento da kappa_{i-1} a kappa_i
+#     delta_next = lead(GAP) - GAP       # incremento da kappa_i a kappa_{i+1}
+#   ) %>%
+#   filter(
+#     !is.na(delta_prev) & !is.na(delta_next),  # scarta i bordi
+#     delta_prev > 0,                           # è in crescita dal precedente?
+#     delta_next < epsilon,                     # la crescita verso il successivo è piccola?
+#     (delta_next / delta_prev) < ratio_threshold
+#   ) %>%
+#   slice_head(n = 1) %>%                       # primo kappa che soddisfa
+#   ungroup() %>%
+#   select(K, elbow_kappa = kappa, GAP, delta_prev, delta_next)
+# 
+# print(elbow_kappa)
