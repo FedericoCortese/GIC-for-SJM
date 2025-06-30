@@ -674,12 +674,12 @@ permute_gap <- function(Y) {
   if (!is.matrix(Y)) {
     stop("L'input Y deve essere una matrice.")
   }
-  T <- nrow(Y)
+  TT <- nrow(Y)
   P <- ncol(Y)
   
   # Applichiamo una permutazione indipendente su ciascuna colonna
   Y_perm <- apply(Y, 2, function(col) {
-    sample(col, size = T, replace = FALSE)
+    sample(col, size = TT, replace = FALSE)
   })
   
   # Se apply restituisce un vettore se P == 1, convertiamo in matrice
@@ -791,7 +791,7 @@ gap_sparse_jump=function(
       log_O = log(loss[!permuted]),
       log_O_star_mean = mean(log(loss[permuted])),
       se_log_O_star=sd(log(loss[permuted])),
-      GAP = log_O - log_O_star_mean,
+      GAP =  log_O - log_O_star_mean,
       .groups = 'drop'
     )
   
