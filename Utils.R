@@ -456,21 +456,20 @@ cv_sparse_jump <- function(
     Y,
     true_states,
     K_grid=NULL,
-    kappa_grid=NULL,
+    #kappa_grid=NULL,
     lambda_grid=NULL,
     n_folds = 5,
     parallel=F,
     n_cores=NULL,
-    cv_method="forward-chain"
+    cv_method="blocked-cv"
 ) {
   
-  # cv_sparse_jump: Cross-validate Sparse Jump Model parameters (K, kappa, lambda)
+  # cv_sparse_jump: Cross-validate Sparse Jump Model parameters (K and lambda)
   
   # Arguments:
   #   Y           - data matrix (N × P)
   #   true_states - vector of true states for ARI computation
   #   K_grid      - vector of candidate numbers of states
-  #   kappa_grid  - vector of candidate kappas
   #   lambda_grid - vector of candidate lambdas
   #   n_folds     - number of folds for cross-validation (default: 5)
   #   parallel    - logical; TRUE for parallel execution (default: FALSE)
@@ -490,9 +489,7 @@ cv_sparse_jump <- function(
     K_grid <- seq(2, 4, by = 1)  # Default range for K
   }
   
-  if(is.null(kappa_grid)) {
-    kappa_grid <- seq(1, sqrt(P), length.out=5)  # Default range for kappa
-  }
+  
   if(is.null(lambda_grid)) {
     lambda_grid <- c(.1,.5,1,5,10,50,100,1000)  # Default range for lambda
   }
@@ -575,13 +572,16 @@ cv_sparse_jump <- function(
     }
     
     # 4) Calcolo ARI tra etichette vere e quelle predette sul blocco VAL
-    return(adjustedRandIndex(true_states[val_idx], pred_val_states))
+    return(
+      adjustedRandIndex(true_states[val_idx], pred_val_states)
+      )
   }
   
   # Costruisco la griglia di tutte le combinazioni di (K, kappa, lambda)
   grid <- expand.grid(
     K      = K_grid,
-    kappa  = kappa_grid,
+    # For kappa we take a representative value, we will select kappa later based on GAP stat
+    kappa  = sqrt(P)/2,
     lambda = lambda_grid,
     KEEP.OUT.ATTRS = FALSE,
     stringsAsFactors = FALSE
@@ -599,9 +599,9 @@ cv_sparse_jump <- function(
   if (!parallel) {
     # applichiamo una funzione su ogni riga di 'grid'
     results_list <- lapply(seq_len(nrow(grid)), function(row) {
-      K_val     <- as.integer(grid$K[row])
-      kappa_val <- as.integer(grid$kappa[row])
-      lambda_val<-        grid$lambda[row]
+      K_val     <- grid$K[row]
+      kappa_val <- grid$kappa[row]
+      lambda_val<- grid$lambda[row]
       
       # calcolo ARI su ciascun fold
       ari_vals <- numeric(n_folds)
@@ -665,5 +665,199 @@ cv_sparse_jump <- function(
     results <- do.call(rbind, results_list)
   }
   
+  
   return(results)
 }
+
+permute_gap <- function(Y) {
+  # Controllo input
+  if (!is.matrix(Y)) {
+    stop("L'input Y deve essere una matrice.")
+  }
+  T <- nrow(Y)
+  P <- ncol(Y)
+  
+  # Applichiamo una permutazione indipendente su ciascuna colonna
+  Y_perm <- apply(Y, 2, function(col) {
+    sample(col, size = T, replace = FALSE)
+  })
+  
+  # Se apply restituisce un vettore se P == 1, convertiamo in matrice
+  if (P == 1) {
+    Y_perm <- matrix(Y_perm, nrow = T, ncol = 1)
+  }
+  
+  # Conserviamo eventuali nomi di righe e colonne
+  rownames(Y_perm) <- rownames(Y)
+  colnames(Y_perm) <- colnames(Y)
+  
+  return(Y_perm)
+}
+
+
+gap_sparse_jump=function(
+    Y,
+    K_grid=NULL,
+    kappa_grid=NULL,
+    lambda=0,
+    B=10,
+    parallel=F,
+    n_cores=NULL
+){
+  
+  if(is.null(K_grid)) {
+    K_grid <- seq(2, 4, by = 1)  # Default range for K
+  }
+  
+  
+  if(is.null(lambda_grid)) {
+    kappa_grid <- seq(1,sqrt(P),length.out=8)  # Default range for lambda
+  }
+  
+  # Libreria per ARI
+  library(mclust)
+  
+  N <- nrow(Y)
+  P <- ncol(Y)
+  
+  grid <- expand.grid(kappa = kappa_grid, 
+                      lambda = lambda, 
+                      K = K_grid, 
+                      b = 0:B)
+  
+  gap_one_run=function(kappa,lambda,K,b){
+    if (b == 0) {
+      Y_input <- Y
+      permuted <- FALSE
+    } else {
+      # Permute features for kappa
+      Y_input <- permute_gap(Y)
+      permuted <- TRUE
+    }
+    # Fit the model
+    
+    fit=sparse_jump(
+      Y_in         = as.matrix(Y_input),
+      n_states     = as.integer(K),
+      max_features = kappa,
+      jump_penalty = lambda,
+      max_iter     = 10,
+      tol          = 1e-8,
+      n_init       = 10,
+      verbose      = FALSE
+    )
+    
+    return(list(loss=fit$loss,
+                K=K,
+                permuted=permuted,
+                kappa=kappa,
+                lambda=lambda
+                ))
+    
+  }
+  
+  if(parallel){
+    if(is.null(n_cores)){
+      n_cores <- parallel::detectCores() - 1
+    }
+    results <- parallel::mclapply(seq_len(nrow(grid)), function(i) {
+      params <- grid[i, ]
+      gap_one_run(
+        kappa = params$kappa,
+        lambda= params$lambda,
+        K     = params$K,
+        b     = params$b
+      )
+    }, mc.cores = mc_cores)
+  }
+  else{
+    results <- lapply(seq_len(nrow(grid)), function(i) {
+      params <- grid[i, ]
+      gap_one_run(
+        kappa = params$kappa,
+        lambda= params$lambda,
+        K     = params$K,
+        b     = params$b
+      )
+    })
+  }
+  
+  meta_df <- do.call(rbind.data.frame, c(results, make.row.names = FALSE))
+  
+  library(dplyr)
+  gap_stats <- meta_df %>%
+    group_by(K, kappa) %>%
+    summarise(
+      log_O = log(loss[!permuted]),
+      log_O_star_mean = mean(log(loss[permuted])),
+      se_log_O_star=sd(log(loss[permuted])),
+      GAP = log_O - log_O_star_mean,
+      .groups = 'drop'
+    )
+  
+  library(ggplot2)
+  
+  plot_res=ggplot(gap_stats, aes(x = kappa, y = GAP, color = factor(K))) +
+    geom_line() +
+    geom_point() +
+    scale_color_discrete(name = "Numero di cluster\n(K)") +
+    labs(
+      x = expression(kappa),
+      y = "Gap Statistic",
+      title = "Gap Statistic vs kappa per diversi valori di K"
+    ) +
+    theme_minimal() +
+    theme(
+      plot.title = element_text(hjust = 0.5),
+      legend.position = "right"
+    )
+  
+  return(list(gap_stats=gap_stats,
+              plot_res=plot_res,
+              meta_df=meta_df))
+  
+  
+}
+
+# Automatic selection of kappa based on GAP statistic
+optimal_kappa <- gap_stats %>%
+  # Per ciascun K, ordina per kappa
+  group_by(K) %>%
+  arrange(kappa) %>%
+  # Calcola il GAP e la se del passo successivo
+  mutate(
+    GAP_next = lead(GAP),
+    se_next  = lead(se_log_O_star),
+    # regola di Tibshirani: Gap(K,κ) >= Gap(K,κ_next) - se(K,κ_next)
+    select_here = GAP >= (GAP_next - se_next)
+  ) %>%
+  # mantiene solo i κ che soddisfano la regola
+  filter(select_here) %>%
+  # prende il più piccolo κ per ciascun K
+  slice_head(n = 1) %>%
+  ungroup() %>%
+  select(K, optimal_kappa = kappa, GAP, GAP_next, se_next)
+
+print(optimal_kappa)
+
+epsilon         <- 0.05   # soglia per dire che Δ+ è "vicino a zero"
+ratio_threshold <- 0.2    # Δ+ / Δ- dev'essere molto piccolo (<20%)
+
+elbow_kappa <- gap_stats %>%
+  group_by(K) %>%
+  arrange(kappa) %>%
+  mutate(
+    delta_prev = GAP - lag(GAP),       # incremento da kappa_{i-1} a kappa_i
+    delta_next = lead(GAP) - GAP       # incremento da kappa_i a kappa_{i+1}
+  ) %>%
+  filter(
+    !is.na(delta_prev) & !is.na(delta_next),  # scarta i bordi
+    delta_prev > 0,                           # è in crescita dal precedente?
+    delta_next < epsilon,                     # la crescita verso il successivo è piccola?
+    (delta_next / delta_prev) < ratio_threshold
+  ) %>%
+  slice_head(n = 1) %>%                       # primo kappa che soddisfa
+  ungroup() %>%
+  select(K, elbow_kappa = kappa, GAP, delta_prev, delta_next)
+
+print(elbow_kappa)

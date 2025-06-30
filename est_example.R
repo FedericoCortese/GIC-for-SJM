@@ -62,29 +62,29 @@ res_grid=grid_search_SJM(
 
 # CV
 
-res_cv=cv_sparse_jump(
-    Y=Y,
-    true_states=true_stats,
-    K_grid=2:4,
-    kappa_grid=seq(1,sqrt(P),length.out=5),
-    lambda_grid=c(0,.5,1,5,10,50,100,1000,10^4),
-    n_folds = 5,
-    parallel=F
-)
-
-
-res_cv[which.max(res_cv$ARI),]
-best_K=res_cv$K[which.max(res_cv$ARI)]
-best_kappa=res_cv$kappa[which.max(res_cv$ARI)]
-best_lambda=res_cv$lambda[which.max(res_cv$ARI)]
+# res_cv=cv_sparse_jump(
+#     Y=Y,
+#     true_states=true_stats,
+#     K_grid=2:3,
+#     kappa_grid=seq(1,sqrt(P),length.out=5),
+#     lambda_grid=c(0,.5,1,10,50,100),
+#     n_folds = 5,
+#     parallel=F
+# )
+# 
+# 
+# res_cv[which.max(res_cv$ARI),]
+# best_K=res_cv$K[which.max(res_cv$ARI)]
+# best_kappa=res_cv$kappa[which.max(res_cv$ARI)]
+# best_lambda=res_cv$lambda[which.max(res_cv$ARI)]
 
 # Cross-validation
 
-cv_forw=cv_sparse_jump(
+cv_=cv_sparse_jump(
     Y=Y,
     true_states=true_stats,
     K_grid=c(2,3),
-    kappa_grid=seq(1,sqrt(dim(Y)[2]),length.out=8),
+    kappa_grid=seq(1,sqrt(dim(Y)[2]),length.out=5),
     lambda_grid=c(0,.5,1,5),
     n_folds = 10,
     parallel=F,
@@ -92,7 +92,7 @@ cv_forw=cv_sparse_jump(
     cv_method="blocked-cv"
 )
 
-cv_forw[which.max(cv_forw$ARI),]
+cv_[which.max(cv_$ARI),]
 
 Yest_cv=SJM_est(Y,K=2,kappa=1,lambda=5)
 Yest_cv$FTIC

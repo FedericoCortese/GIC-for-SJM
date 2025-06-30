@@ -346,6 +346,15 @@ List sparse_jump(NumericMatrix Y_in,
     feat_w = new_w;
   }
   
+  // Compute weighted BCSS on Y using final feat_w
+  arma::mat Y_weighted = Y;
+  for (int j = 0; j < p; ++j) {
+    Y_weighted.col(j) *= feat_w[j];
+  }
+  arma::rowvec bcss_vec = get_BCSS(Y_weighted, states, n_states);
+  double weighted_BCSS = arma::accu(bcss_vec);
+  
+  // Prepare R return
   int n_obs = Y.n_rows;
   IntegerVector R_states(n_obs);
   for (int i = 0; i < n_obs; ++i) {
@@ -359,6 +368,6 @@ List sparse_jump(NumericMatrix Y_in,
   return List::create(
     Named("states")  = R_states,
     Named("feat_w")  = R_feat_w,
-    Named("loss")    = last_loss
+    Named("loss") = weighted_BCSS
   );
 }
